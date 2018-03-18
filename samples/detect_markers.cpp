@@ -42,6 +42,13 @@ the use of this software, even if advised of the possibility of such damage.
 #include <iostream>
 #include <fstream>
 
+#include <covariance-tracker/covariance-tracker.h>
+#include <Eigen/Dense>
+#include <iostream>
+#include <vector>
+
+
+
 using namespace std;
 using namespace cv;
 
@@ -186,7 +193,12 @@ int main(int argc, char *argv[]) {
 
     double totalTime = 0;
     int totalIterations = 0;
-
+// setting up the covariance matrix
+	CovarianceTracker<double, 3> cov(50);
+	Eigen::Matrix<double, 3, 3> c;
+	
+	
+	
     int di = 1;
 	int midThreshold = 50;
     int threshold = 60;
@@ -227,11 +239,13 @@ int main(int argc, char *argv[]) {
                  << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms)"
 		 << endl;
         }
-
+	
         // draw results
 	//edit image:
 	imageOriginal.copyTo(imageCopy);
         if(ids.size() > 0) {
+		cov.addData(tvecs);//This is data covariance tracker
+		c = cov.getCovariance;
 		startTime = getTickCount();
 		cout << "'Start Time' is now: " << startTime/getTickFrequency() << endl;
             aruco::drawDetectedMarkers(imageCopy, corners, ids);
@@ -245,6 +259,7 @@ int main(int argc, char *argv[]) {
 		    cout << "Distance = " << tvecs[i] << endl;
 			cout << "Rotation = "<< rvecs[i] << endl;
 			cout << "Threshold = "<< min << "  " << max<<endl;
+			cout << "Covariance Matrix = "<<c<<endl;
 			myfileDistance0 << tvecs[i][0] << endl;
 			myfileDistance1 << tvecs[i][1] << endl;
 			myfileDistance2 << tvecs[i][2] << endl;
@@ -258,6 +273,7 @@ int main(int argc, char *argv[]) {
 			rangeMax=rangeMax-(rangeMax-midThreshold)/10;
 		if (rangeMin<(midThreshold-2))
 			rangeMin=rangeMin+(midThreshold-rangeMin)/10;
+		
            }
 	++count; // Count how many consecutive frames the marker has been seen in.
 	cout << "marker detected for " << count << " consecutive frames."<<" Range max:"<<rangeMax << endl;
@@ -288,7 +304,7 @@ int main(int argc, char *argv[]) {
         if(showRejected && rejected.size() > 0)
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 	
-        imshow("out", imageCopy);
+//        imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
         if(key == 27) break;
     }
